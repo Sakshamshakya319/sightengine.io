@@ -26,6 +26,9 @@ let filteredElements = {
   images: new Map()
 };
 
+// Extension state
+let extensionPaused = false;
+
 // Load settings
 function loadSettings() {
   chrome.storage.local.get([window.SocioConfig.STORAGE_KEYS.SETTINGS], (result) => {
@@ -37,6 +40,8 @@ function loadSettings() {
 
 // Update statistics
 function updateStats(type, count = 1) {
+  console.log(`Updating stats for ${type} content, count: ${count}`);
+  
   // Update session stats
   if (type === window.SocioConfig.FILTER_CATEGORIES.TEXT) {
     sessionStats.textFiltered += count;
@@ -49,6 +54,12 @@ function updateStats(type, count = 1) {
     action: 'updateStats',
     type: type,
     count: count
+  }, (response) => {
+    if (response && response.success) {
+      console.log(`Stats updated successfully for ${type}:`, response.stats);
+    } else {
+      console.error(`Failed to update stats for ${type}`);
+    }
   });
 }
 
@@ -85,12 +96,15 @@ async function filterTextContent(element) {
   }
   
   try {
+    console.log('Sending text to filter:', originalText.substring(0, 50) + '...');
     // Call backend API to filter text
     const response = await fetch(`${window.SocioConfig.BACKEND_API_URL}/api/filter-text`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
+      mode: 'cors',
       body: JSON.stringify({ text: originalText })
     });
     
@@ -116,8 +130,9 @@ async function filterTextContent(element) {
       // Add filtered class for styling
       element.classList.add('socio-filtered-text');
       
-      // Update statistics
-      updateStats(window.SocioConfig.FILTER_CATEGORIES.TEXT);
+      // Update statistics - ensure we're using the correct category constant
+      console.log('Updating text statistics');
+      updateStats('text', 1);
       
       // Update history
       updateHistory(
@@ -149,12 +164,15 @@ async function filterImageContent(imgElement) {
   }
   
   try {
+    console.log('Sending image to filter:', imgElement.src.substring(0, 50) + '...');
     // Call backend API to filter image
     const response = await fetch(`${window.SocioConfig.BACKEND_API_URL}/api/filter-image`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
+      mode: 'cors',
       body: JSON.stringify({ imageUrl: imgElement.src })
     });
     
@@ -190,10 +208,14 @@ async function filterImageContent(imgElement) {
         overlay.className = 'socio-image-overlay';
         wrapper.appendChild(overlay);
         
-        // Add message and button to the overlay
+        // Add message, disclaimer, and button to the overlay
         const message = document.createElement('div');
         message.className = 'socio-overlay-message';
         message.textContent = 'This image is blurred by Socio.io extension';
+        
+        const disclaimer = document.createElement('div');
+        disclaimer.className = 'socio-overlay-disclaimer';
+        disclaimer.textContent = 'This content may be inappropriate or sensitive';
         
         const button = document.createElement('button');
         button.className = 'socio-view-image-btn';
@@ -206,14 +228,16 @@ async function filterImageContent(imgElement) {
         });
         
         overlay.appendChild(message);
+        overlay.appendChild(disclaimer);
         overlay.appendChild(button);
       }
       
       // Add filtered class for styling
       imgElement.classList.add('socio-filtered-image');
       
-      // Update statistics
-      updateStats(window.SocioConfig.FILTER_CATEGORIES.IMAGE);
+      // Update statistics - ensure we're using the correct category constant
+      console.log('Updating image statistics');
+      updateStats('image', 1);
       
       // Update history
       updateHistory(
@@ -376,16 +400,60 @@ function checkConnection() {
 
 // Initialize extension
 async function initialize() {
+  console.log('Socio.io: Initializing extension');
+  
   // Load settings
   loadSettings();
   
+  // Check if extension is paused
+  chrome.storage.local.get(['socio_io_paused'], (result) => {
+    extensionPaused = result.socio_io_paused || false;
+    
+    if (extensionPaused) {
+      console.log('Socio.io: Extension is paused');
+      return;
+    }
+    
+    // Continue initialization
+    initializeExtension();
+  });
+}
+
+// Main initialization function
+async function initializeExtension() {
   // Check connection to backend
+  console.log('Socio.io: Checking connection to backend at', window.SocioConfig.BACKEND_API_URL);
   const isConnected = await checkConnection();
   
   if (!isConnected) {
-    console.error('Socio.io: Failed to connect to backend');
+    console.error('Socio.io: Failed to connect to backend at', window.SocioConfig.BACKEND_API_URL);
+    
+    // Try a direct fetch to diagnose the issue
+    try {
+      console.log('Socio.io: Attempting direct fetch to backend health endpoint');
+      const response = await fetch(`${window.SocioConfig.BACKEND_API_URL}/health`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        mode: 'cors'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Socio.io: Direct fetch succeeded:', data);
+      } else {
+        console.error('Socio.io: Direct fetch failed with status:', response.status);
+      }
+    } catch (error) {
+      console.error('Socio.io: Direct fetch error:', error);
+    }
+    
     return;
   }
+  
+  console.log('Socio.io: Successfully connected to backend');
   
   // Process the page
   processPage();
@@ -442,6 +510,32 @@ async function initialize() {
     subtree: true
   });
 }
+
+// Listen for messages from popup
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === 'recoverContent') {
+    recoverContent();
+  } else if (message.action === 'pauseExtension') {
+    // Pause the extension
+    extensionPaused = true;
+    
+    // Save the paused state
+    chrome.storage.local.set({ 'socio_io_paused': true });
+    
+    console.log('Socio.io: Extension paused');
+  } else if (message.action === 'resumeExtension') {
+    // Resume the extension
+    extensionPaused = false;
+    
+    // Save the paused state
+    chrome.storage.local.set({ 'socio_io_paused': false });
+    
+    console.log('Socio.io: Extension resumed');
+    
+    // Reinitialize the extension
+    initializeExtension();
+  }
+});
 
 // Start the extension
 window.addEventListener('load', initialize);

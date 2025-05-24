@@ -1,7 +1,7 @@
 // Configuration file for Socio.io extension
 
 // Backend API URL - update this after deploying to Render
-const BACKEND_API_URL = 'https://sightengine-io.onrender.com/';
+const BACKEND_API_URL = 'https://sightengine-io.onrender.com';
 
 // Storage keys
 const STORAGE_KEYS = {

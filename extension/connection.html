@@ -24,6 +24,13 @@
     <div class="socio-loader" id="connection-loader"></div>
     <div class="socio-connection-success" id="connection-success" style="display: none;"></div>
     <div class="socio-connection-error" id="connection-error" style="display: none;"></div>
+    <div class="socio-connection-details">
+      <h3>Connection Details</h3>
+      <p>Backend URL: <span id="backend-url"></span></p>
+      <p>Status: <span id="connection-status">Checking...</span></p>
+      <p>Response: <span id="connection-response">Waiting...</span></p>
+      <button id="retry-button" style="display: none;">Retry Connection</button>
+    </div>
   </div>
 
   <script src="config.js"></script>
@@ -34,42 +41,91 @@
     const errorIcon = document.getElementById('connection-error');
     const statusText = document.querySelector('.socio-connection-status');
     const messageText = document.querySelector('.socio-connection-message');
+    const backendUrlElement = document.getElementById('backend-url');
+    const connectionStatusElement = document.getElementById('connection-status');
+    const connectionResponseElement = document.getElementById('connection-response');
+    const retryButton = document.getElementById('retry-button');
     
     // Check connection to backend
     function checkConnection() {
       const apiUrl = window.SocioConfig?.BACKEND_API_URL || 'https://sightengine-io.onrender.com';
       
-      fetch(`${apiUrl}/health`)
+      // Update UI
+      backendUrlElement.textContent = apiUrl;
+      connectionStatusElement.textContent = 'Connecting...';
+      connectionResponseElement.textContent = 'Waiting for response...';
+      
+      // Make the request with detailed logging
+      console.log(`Attempting to connect to: ${apiUrl}/health`);
+      
+      fetch(`${apiUrl}/health`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        mode: 'cors'
+      })
         .then(response => {
+          console.log('Response status:', response.status);
+          console.log('Response headers:', response.headers);
+          
+          connectionStatusElement.textContent = `HTTP ${response.status} ${response.statusText}`;
+          
           if (!response.ok) {
-            throw new Error('Connection failed');
+            throw new Error(`HTTP error: ${response.status}`);
           }
           return response.json();
         })
         .then(data => {
+          console.log('Response data:', data);
+          connectionResponseElement.textContent = JSON.stringify(data);
+          
           if (data.status === 'ok') {
             // Connection successful
             loader.style.display = 'none';
             successIcon.style.display = 'flex';
             statusText.textContent = 'Connection Successful';
-            messageText.textContent = 'Socio.io is ready to filter content. This window will close automatically.';
+            messageText.textContent = 'Socio.io is ready to filter content.';
             
-            // Close the window after 2 seconds
-            setTimeout(() => {
-              window.close();
-            }, 2000);
+            // Update connection details
+            connectionStatusElement.textContent = 'Connected';
+            connectionResponseElement.textContent = JSON.stringify(data, null, 2);
           } else {
             throw new Error('Invalid response from server');
           }
         })
         .catch(error => {
+          console.error('Connection error:', error);
+          
           // Connection failed
           loader.style.display = 'none';
           errorIcon.style.display = 'flex';
           statusText.textContent = 'Connection Failed';
-          messageText.textContent = `Could not connect to Socio.io backend. Please check your configuration and try again. Error: ${error.message}`;
+          messageText.textContent = `Could not connect to Socio.io backend. Please check your configuration and try again.`;
+          
+          // Update connection details
+          connectionStatusElement.textContent = 'Failed';
+          connectionResponseElement.textContent = error.message;
+          
+          // Show retry button
+          retryButton.style.display = 'block';
         });
     }
+    
+    // Add retry button event listener
+    retryButton.addEventListener('click', () => {
+      // Reset UI
+      loader.style.display = 'block';
+      errorIcon.style.display = 'none';
+      successIcon.style.display = 'none';
+      statusText.textContent = 'Connecting to Socio.io';
+      messageText.textContent = 'Checking connection to Socio.io backend...';
+      retryButton.style.display = 'none';
+      
+      // Try connection again
+      checkConnection();
+    });
     
     // Start the connection check when the page loads
     window.addEventListener('load', checkConnection);

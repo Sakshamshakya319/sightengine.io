@@ -58,8 +58,17 @@
   color: #ffffff;
   font-size: 14px;
   font-weight: 500;
-  margin: 0;
+  margin: 0 0 8px 0;
   max-width: 80%;
+}
+
+.socio-overlay-disclaimer {
+  color: #f8c471;
+  font-size: 12px;
+  font-style: italic;
+  margin: 8px 0;
+  max-width: 80%;
+  text-align: center;
 }
 
 .socio-view-image-btn {

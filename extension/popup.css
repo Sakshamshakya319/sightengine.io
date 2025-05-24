@@ -214,11 +214,17 @@ select {
 }
 
 .history-list {
-  max-height: 320px;
+  max-height: 260px;
   overflow-y: auto;
   border: 1px solid var(--gray-300);
   border-radius: var(--radius-md);
   background-color: var(--gray-100);
+  margin-bottom: 16px;
+}
+
+.history-recover-btn {
+  width: 100%;
+  margin-top: 8px;
 }
 
 .history-item {
@@ -426,8 +432,14 @@ input[type="range"]::-webkit-slider-thumb {
   gap: 8px;
 }
 
-.recover-btn {
+.footer-buttons {
+  display: flex;
   width: 100%;
+  gap: 8px;
+}
+
+.recover-btn {
+  flex: 1;
   padding: 10px;
   background-color: var(--warning-color);
   color: var(--white);
@@ -441,6 +453,31 @@ input[type="range"]::-webkit-slider-thumb {
 
 .recover-btn:hover {
   background-color: #e67e22;
+}
+
+.toggle-connection-btn {
+  flex: 1;
+  padding: 10px;
+  background-color: var(--gray-600);
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.toggle-connection-btn:hover {
+  background-color: var(--gray-700);
+}
+
+.toggle-connection-btn.paused {
+  background-color: var(--primary-color);
+}
+
+.toggle-connection-btn.paused:hover {
+  background-color: var(--primary-dark);
 }
 
 .socio-footer p {

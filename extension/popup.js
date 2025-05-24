@@ -11,6 +11,8 @@ const lastUpdated = document.getElementById('last-updated');
 const domainDropdown = document.getElementById('domain-dropdown');
 const historyList = document.getElementById('history-list');
 const recoverContentBtn = document.getElementById('recover-content-btn');
+const historyRecoverBtn = document.getElementById('history-recover-btn');
+const toggleConnectionBtn = document.getElementById('toggle-connection-btn');
 const saveSettingsBtn = document.getElementById('save-settings');
 
 // Settings form elements
@@ -19,6 +21,9 @@ const enableImageFiltering = document.getElementById('enable-image-filtering');
 const enableStatistics = document.getElementById('enable-statistics');
 const autoBlurImages = document.getElementById('auto-blur-images');
 const sensitivityLevel = document.getElementById('sensitivity-level');
+
+// Extension state
+let extensionPaused = false;
 
 // Check connection to backend
 function checkConnection() {
@@ -257,8 +262,43 @@ domainDropdown.addEventListener('change', () => {
 // Save settings button
 saveSettingsBtn.addEventListener('click', saveSettings);
 
-// Recover content button
+// Recover content buttons
 recoverContentBtn.addEventListener('click', recoverContent);
+historyRecoverBtn.addEventListener('click', recoverContent);
+
+// Toggle connection button
+toggleConnectionBtn.addEventListener('click', () => {
+  extensionPaused = !extensionPaused;
+  
+  if (extensionPaused) {
+    toggleConnectionBtn.textContent = 'Resume Extension';
+    toggleConnectionBtn.classList.add('paused');
+    
+    // Send message to all tabs to pause the extension
+    chrome.tabs.query({}, (tabs) => {
+      tabs.forEach((tab) => {
+        chrome.tabs.sendMessage(tab.id, { action: 'pauseExtension' });
+      });
+    });
+    
+    // Update connection status
+    connectionStatus.textContent = 'Paused';
+    connectionStatus.className = 'socio-status disconnected';
+  } else {
+    toggleConnectionBtn.textContent = 'Pause Extension';
+    toggleConnectionBtn.classList.remove('paused');
+    
+    // Send message to all tabs to resume the extension
+    chrome.tabs.query({}, (tabs) => {
+      tabs.forEach((tab) => {
+        chrome.tabs.sendMessage(tab.id, { action: 'resumeExtension' });
+      });
+    });
+    
+    // Check connection again
+    checkConnection();
+  }
+});
 
 // Listen for messages from content script
 chrome.runtime.onMessage.addListener((message) => {
@@ -269,8 +309,20 @@ chrome.runtime.onMessage.addListener((message) => {
 
 // Initialize popup
 document.addEventListener('DOMContentLoaded', () => {
-  // Check connection
-  checkConnection();
+  // Check if extension is paused
+  chrome.storage.local.get(['socio_io_paused'], (result) => {
+    extensionPaused = result.socio_io_paused || false;
+    
+    if (extensionPaused) {
+      toggleConnectionBtn.textContent = 'Resume Extension';
+      toggleConnectionBtn.classList.add('paused');
+      connectionStatus.textContent = 'Paused';
+      connectionStatus.className = 'socio-status disconnected';
+    } else {
+      // Check connection
+      checkConnection();
+    }
+  });
   
   // Load initial data
   loadStatistics();

@@ -10,7 +10,7 @@ chrome.runtime.onInstalled.addListener(() => {
   };
 
   const defaultHistory = {};
-  const defaultSettings = window.SocioConfig?.DEFAULT_SETTINGS || {
+  const defaultSettings = {
     enableTextFiltering: true,
     enableImageFiltering: true,
     enableStatistics: true,
@@ -30,21 +30,31 @@ chrome.runtime.onInstalled.addListener(() => {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // Handle connection check message
   if (message.action === 'checkConnection') {
-    const apiUrl = message.apiUrl || 'https://sightengine-io.onrender.com/';
+    const apiUrl = message.apiUrl || 'https://sightengine-io.onrender.com';
     
-    fetch(`${apiUrl}/health`)
+    fetch(`${apiUrl}/health`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      mode: 'cors'
+    })
       .then(response => {
         if (response.ok) return response.json();
         throw new Error('Connection failed');
       })
       .then(data => {
         if (data.status === 'ok') {
+          console.log('Successfully connected to backend:', data);
           sendResponse({ success: true, message: 'Connected to Socio.io backend' });
         } else {
+          console.error('Invalid response from server:', data);
           sendResponse({ success: false, message: 'Invalid response from server' });
         }
       })
       .catch(error => {
+        console.error('Failed to connect to backend:', error);
         sendResponse({ 
           success: false, 
           message: `Failed to connect to backend: ${error.message}` 
@@ -56,6 +66,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   
   // Handle statistics update message
   if (message.action === 'updateStats') {
+    console.log('Received updateStats message:', message);
+    
     chrome.storage.local.get(['socio_io_stats'], function(result) {
       let stats = result.socio_io_stats || {
         totalFiltered: 0,
@@ -64,22 +76,28 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         lastUpdated: new Date().toISOString()
       };
       
+      const count = message.count || 1;
+      
       // Update stats based on filter type
-      stats.totalFiltered += message.count || 1;
+      stats.totalFiltered += count;
       
       if (message.type === 'text') {
-        stats.textFiltered += message.count || 1;
+        stats.textFiltered += count;
+        console.log(`Updated text stats: ${stats.textFiltered}`);
       } else if (message.type === 'image') {
-        stats.imagesFiltered += message.count || 1;
+        stats.imagesFiltered += count;
+        console.log(`Updated image stats: ${stats.imagesFiltered}`);
       }
       
       stats.lastUpdated = new Date().toISOString();
       
       // Save updated stats
-      chrome.storage.local.set({ 'socio_io_stats': stats });
-      
-      // Respond with updated stats
-      sendResponse({ success: true, stats });
+      chrome.storage.local.set({ 'socio_io_stats': stats }, () => {
+        console.log('Stats saved successfully:', stats);
+        
+        // Respond with updated stats
+        sendResponse({ success: true, stats });
+      });
     });
     
     return true; // Indicates async response
