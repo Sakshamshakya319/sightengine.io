@@ -30,7 +30,7 @@ chrome.runtime.onInstalled.addListener(() => {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // Handle connection check message
   if (message.action === 'checkConnection') {
-    const apiUrl = message.apiUrl || 'https://socio-io-backend.onrender.com';
+    const apiUrl = message.apiUrl || 'https://sightengine-io.onrender.com/';
     
     fetch(`${apiUrl}/health`)
       .then(response => {

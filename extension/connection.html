@@ -37,7 +37,7 @@
     
     // Check connection to backend
     function checkConnection() {
-      const apiUrl = window.SocioConfig?.BACKEND_API_URL || 'https://socio-io-backend.onrender.com';
+      const apiUrl = window.SocioConfig?.BACKEND_API_URL || 'https://sightengine-io.onrender.com';
       
       fetch(`${apiUrl}/health`)
         .then(response => {
