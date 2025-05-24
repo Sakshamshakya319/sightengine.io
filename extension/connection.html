@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Socio.io Connection Check</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body>
+  <div class="socio-connection-page">
+    <img src="icons/icon128.png" alt="Socio.io Logo" class="socio-connection-logo">
+    <h1 class="socio-connection-status">Connecting to Socio.io</h1>
+    <p class="socio-connection-message">Checking connection to Socio.io backend...</p>
+    <div class="socio-loader" id="connection-loader"></div>
+    <div class="socio-connection-success" id="connection-success" style="display: none;"></div>
+    <div class="socio-connection-error" id="connection-error" style="display: none;"></div>
+  </div>
+
+  <script src="config.js"></script>
+  <script>
+    // Elements
+    const loader = document.getElementById('connection-loader');
+    const successIcon = document.getElementById('connection-success');
+    const errorIcon = document.getElementById('connection-error');
+    const statusText = document.querySelector('.socio-connection-status');
+    const messageText = document.querySelector('.socio-connection-message');
+    
+    // Check connection to backend
+    function checkConnection() {
+      const apiUrl = window.SocioConfig?.BACKEND_API_URL || 'https://socio-io-backend.onrender.com';
+      
+      fetch(`${apiUrl}/health`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Connection failed');
+          }
+          return response.json();
+        })
+        .then(data => {
+          if (data.status === 'ok') {
+            // Connection successful
+            loader.style.display = 'none';
+            successIcon.style.display = 'flex';
+            statusText.textContent = 'Connection Successful';
+            messageText.textContent = 'Socio.io is ready to filter content. This window will close automatically.';
+            
+            // Close the window after 2 seconds
+            setTimeout(() => {
+              window.close();
+            }, 2000);
+          } else {
+            throw new Error('Invalid response from server');
+          }
+        })
+        .catch(error => {
+          // Connection failed
+          loader.style.display = 'none';
+          errorIcon.style.display = 'flex';
+          statusText.textContent = 'Connection Failed';
+          messageText.textContent = `Could not connect to Socio.io backend. Please check your configuration and try again. Error: ${error.message}`;
+        });
+    }
+    
+    // Start the connection check when the page loads
+    window.addEventListener('load', checkConnection);
+  </script>
+</body>
+</html>

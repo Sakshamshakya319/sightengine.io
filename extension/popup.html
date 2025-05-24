@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Socio.io</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="socio-popup">
+    <header class="socio-header">
+      <div class="socio-logo">
+        <img src="icons/icon48.png" alt="Socio.io Logo">
+        <h1>Socio.io</h1>
+      </div>
+      <p class="socio-status" id="connection-status">Checking connection...</p>
+    </header>
+
+    <div class="socio-tabs">
+      <button class="tab-btn active" data-tab="stats">Statistics</button>
+      <button class="tab-btn" data-tab="history">History</button>
+      <button class="tab-btn" data-tab="settings">Settings</button>
+    </div>
+
+    <div class="socio-content">
+      <!-- Statistics Tab -->
+      <div class="tab-content active" id="stats-tab">
+        <div class="stats-container">
+          <div class="stat-card total">
+            <h3>Total Filtered</h3>
+            <p class="stat-value" id="total-filtered">0</p>
+          </div>
+          <div class="stat-row">
+            <div class="stat-card">
+              <h3>Text Items</h3>
+              <p class="stat-value" id="text-filtered">0</p>
+            </div>
+            <div class="stat-card">
+              <h3>Images</h3>
+              <p class="stat-value" id="images-filtered">0</p>
+            </div>
+          </div>
+        </div>
+        <p class="stat-updated" id="last-updated">Last updated: Never</p>
+      </div>
+
+      <!-- History Tab -->
+      <div class="tab-content" id="history-tab">
+        <div class="domain-select">
+          <label for="domain-dropdown">Select Domain:</label>
+          <select id="domain-dropdown">
+            <option value="">Select a domain</option>
+          </select>
+        </div>
+        <div class="history-list" id="history-list">
+          <p class="empty-message">Select a domain to view history</p>
+        </div>
+      </div>
+
+      <!-- Settings Tab -->
+      <div class="tab-content" id="settings-tab">
+        <div class="settings-form">
+          <div class="setting-item">
+            <label class="switch">
+              <input type="checkbox" id="enable-text-filtering" checked>
+              <span class="slider"></span>
+            </label>
+            <div class="setting-label">
+              <h3>Text Filtering</h3>
+              <p>Filter explicit text content</p>
+            </div>
+          </div>
+          
+          <div class="setting-item">
+            <label class="switch">
+              <input type="checkbox" id="enable-image-filtering" checked>
+              <span class="slider"></span>
+            </label>
+            <div class="setting-label">
+              <h3>Image Filtering</h3>
+              <p>Blur inappropriate images</p>
+            </div>
+          </div>
+          
+          <div class="setting-item">
+            <label class="switch">
+              <input type="checkbox" id="enable-statistics" checked>
+              <span class="slider"></span>
+            </label>
+            <div class="setting-label">
+              <h3>Statistics</h3>
+              <p>Track filtered content</p>
+            </div>
+          </div>
+          
+          <div class="setting-item">
+            <label class="switch">
+              <input type="checkbox" id="auto-blur-images" checked>
+              <span class="slider"></span>
+            </label>
+            <div class="setting-label">
+              <h3>Auto-Blur Images</h3>
+              <p>Automatically blur flagged images</p>
+            </div>
+          </div>
+          
+          <div class="setting-item slider-setting">
+            <div class="setting-label full-width">
+              <h3>Sensitivity Level</h3>
+              <p>Adjust content filtering sensitivity</p>
+            </div>
+            <div class="range-slider">
+              <input type="range" id="sensitivity-level" min="1" max="3" value="2">
+              <div class="range-labels">
+                <span>Low</span>
+                <span>Medium</span>
+                <span>High</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <button class="save-settings-btn" id="save-settings">Save Settings</button>
+      </div>
+    </div>
+
+    <footer class="socio-footer">
+      <button id="recover-content-btn" class="recover-btn">Recover Content</button>
+      <p>© 2025 Socio.io</p>
+    </footer>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
